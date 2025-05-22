@@ -220,6 +220,7 @@ const emailController = {
               actionType: 'edit_company',
               oldValue: email.companyName,
               newValue: `${companyName} (${affectedCount} mail güncellendi - domain: ${emailDomain})`,
+              userId: req.user.id,
               userIp: req.ip,
               userAgent: req.get('User-Agent')
             });
@@ -481,6 +482,7 @@ ${email.content}
         ],
         order: [['createdAt', 'DESC']]
       });
+
 
       res.json(logs);
     } catch (error) {
