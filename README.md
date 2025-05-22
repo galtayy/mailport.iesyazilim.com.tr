@@ -148,8 +148,8 @@ npm run client:dev
 
 ### 6. Erişim Bilgileri
 - **Frontend**: http://localhost:3010
-- **Backend API**: http://localhost:5051
-- **Health Check**: http://localhost:5051/health
+- **Backend API**: http://localhost:5052
+- **Health Check**: http://localhost:5052/health
 
 ## 🌐 Canlı Ortam
 
@@ -196,7 +196,7 @@ Uygulama tamamen responsive olarak tasarlanmıştır:
 ### Genel Kontroller
 1. MySQL servisi çalışıyor mu?
 2. IMAP/SMTP ayarları doğru mu?
-3. Port 3010 ve 5051 açık mı?
+3. Port 3010 ve 5052 açık mı?
 4. Node.js versiyonu uygun mu?
 
 ### Log Kontrolü

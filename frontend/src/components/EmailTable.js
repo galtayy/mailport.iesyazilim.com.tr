@@ -69,7 +69,7 @@ const EmailTable = ({
   const handleHistoryClick = async (emailId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5051/api/emails/${emailId}/history`, {
+      const response = await fetch(`http://localhost:5052/api/emails/${emailId}/history`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

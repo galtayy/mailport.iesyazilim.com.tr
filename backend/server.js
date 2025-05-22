@@ -14,7 +14,7 @@ const settingsRoutes = require('./routes/settings');
 const emailService = require('./services/emailService');
 
 const app = express();
-const PORT = process.env.PORT || 5051;
+const PORT = process.env.PORT || 5052;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,

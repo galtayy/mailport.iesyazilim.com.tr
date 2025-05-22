@@ -12,7 +12,7 @@ const ImagePreview = ({ attachmentId, filename }) => {
     const loadImage = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5051/api/emails/attachments/${attachmentId}/view`, {
+        const response = await fetch(`http://localhost:5052/api/emails/attachments/${attachmentId}/view`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
@@ -57,7 +57,7 @@ const ImagePreview = ({ attachmentId, filename }) => {
       src={imageSrc}
       alt={filename}
       className="h-16 w-16 object-cover rounded border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-      onClick={() => window.open(`http://localhost:5051/api/emails/attachments/${attachmentId}/view`, '_blank')}
+      onClick={() => window.open(`http://localhost:5052/api/emails/attachments/${attachmentId}/view`, '_blank')}
       title="Resmi büyütmek için tıklayın"
     />
   );
