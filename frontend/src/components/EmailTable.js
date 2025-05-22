@@ -68,8 +68,9 @@ const EmailTable = ({
 
   const handleHistoryClick = async (emailId) => {
     try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5052';
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5052/api/emails/${emailId}/history`, {
+      const response = await fetch(`${API_BASE_URL}/api/emails/${emailId}/history`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
