@@ -2,28 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaPaperclip, FaDownload, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import moment from 'moment';
 import DOMPurify from 'dompurify';
+import api from '../services/api';
 
 const ImagePreview = ({ attachmentId, filename }) => {
   const [imageSrc, setImageSrc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5052';
-
   useEffect(() => {
     const loadImage = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/emails/attachments/${attachmentId}/view`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        const response = await api.get(`/emails/attachments/${attachmentId}/view`, {
+          responseType: 'blob'
         });
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
+        const imageUrl = URL.createObjectURL(response.data);
         setImageSrc(imageUrl);
         setLoading(false);
       } catch (err) {

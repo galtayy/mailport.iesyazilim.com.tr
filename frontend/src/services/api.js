@@ -1,9 +1,15 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5052';
-console.log('API_BASE_URL:', API_BASE_URL);
-console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-console.log('Environment:', process.env.NODE_ENV);
+// Production'da her zaman production URL kullan
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://api.mailport.iesyazilim.com.tr'
+  : (process.env.REACT_APP_API_URL || 'http://localhost:5052');
+
+console.log('API Configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  API_BASE_URL: API_BASE_URL,
+  REACT_APP_API_URL: process.env.REACT_APP_API_URL
+});
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api`,

@@ -70,19 +70,8 @@ const EmailTable = ({
 
   const handleHistoryClick = async (emailId) => {
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5052';
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/emails/${emailId}/history`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const history = await response.json();
-        setHistoryModal({ isOpen: true, emailId, history });
-      }
+      const response = await api.get(`/emails/${emailId}/history`);
+      setHistoryModal({ isOpen: true, emailId, history: response.data });
     } catch (error) {
       console.error('Geçmiş yüklenirken hata:', error);
     }
@@ -107,28 +96,18 @@ const EmailTable = ({
     } else {
       // Conversation'ı aç ve email'leri yükle
       try {
-        const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5052';
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/emails/conversations/${conversationId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        const response = await api.get(`/emails/conversations/${conversationId}`);
         
-        if (response.ok) {
-          const data = await response.json();
-          setConversationEmails(prev => ({
-            ...prev,
-            [conversationId]: data.emails
-          }));
-          
-          setExpandedConversations(prev => {
-            const newSet = new Set(prev);
-            newSet.add(conversationId);
-            return newSet;
-          });
-        }
+        setConversationEmails(prev => ({
+          ...prev,
+          [conversationId]: response.data.emails
+        }));
+        
+        setExpandedConversations(prev => {
+          const newSet = new Set(prev);
+          newSet.add(conversationId);
+          return newSet;
+        });
       } catch (error) {
         console.error('Conversation yükleme hatası:', error);
       }
