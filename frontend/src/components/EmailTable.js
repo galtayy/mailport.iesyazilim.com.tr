@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Fragment } from 'react';
 import { FaReply, FaShare, FaPaperclip, FaEdit, FaEye, FaFilter, FaSearch, FaEnvelope, FaTimes } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/tr';
@@ -18,6 +18,8 @@ const EmailTable = ({
   onStatusFilterChange 
 }) => {
   const [editingEmail, setEditingEmail] = useState(null);
+  const [expandedConversations, setExpandedConversations] = useState(new Set());
+  const [conversationEmails, setConversationEmails] = useState({});
   const [editForm, setEditForm] = useState({ senderName: '', companyName: '', updateAll: false });
   const [historyModal, setHistoryModal] = useState({ isOpen: false, emailId: null, history: [] });
 
@@ -90,6 +92,49 @@ const EmailTable = ({
     setHistoryModal({ isOpen: false, emailId: null, history: [] });
   };
 
+  const toggleConversation = async (email) => {
+    if (!email.conversationId || email.conversationCount <= 1) return;
+
+    const conversationId = email.conversationId;
+    
+    if (expandedConversations.has(conversationId)) {
+      // Conversation'ı kapat
+      setExpandedConversations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(conversationId);
+        return newSet;
+      });
+    } else {
+      // Conversation'ı aç ve email'leri yükle
+      try {
+        const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5052';
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/emails/conversations/${conversationId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setConversationEmails(prev => ({
+            ...prev,
+            [conversationId]: data.emails
+          }));
+          
+          setExpandedConversations(prev => {
+            const newSet = new Set(prev);
+            newSet.add(conversationId);
+            return newSet;
+          });
+        }
+      } catch (error) {
+        console.error('Conversation yükleme hatası:', error);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -147,10 +192,10 @@ const EmailTable = ({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {emails.map((email) => (
-                <tr 
-                  key={email.id} 
-                  className={`hover:bg-gray-50 ${email.status === 'unread' ? 'bg-blue-50' : ''}`}
-                >
+                <Fragment key={email.id}>
+                  <tr 
+                    className={`hover:bg-gray-50 ${email.status === 'unread' ? 'bg-blue-50' : ''}`}
+                  >
                   <td className="px-4 py-4 text-gray-500">
                     <div className="text-sm font-medium">
                       {moment(email.dateReceived).format('DD.MM.YYYY')}
@@ -210,17 +255,33 @@ const EmailTable = ({
                     )}
                   </td>
                   
-                  <td className="px-4 py-5">
-                    <div className="max-w-xs">
-                      <div className="text-sm font-medium text-gray-900 text-truncate">
-                        {email.subject || 'Konu yok'}
-                      </div>
-                      {email.hasAttachments && (
-                        <div className="flex items-center mt-1">
-                          <FaPaperclip className="h-3 w-3 text-gray-400 mr-1" />
-                          <span className="text-xs text-gray-500">Ek dosya</span>
-                        </div>
+                  <td className="px-4 py-5 max-w-sm">
+                    <div className="flex items-center">
+                      {email.conversationId && email.conversationCount > 1 && (
+                        <button
+                          onClick={() => toggleConversation(email)}
+                          className="mr-2 p-1 text-gray-400 hover:text-gray-600 focus:outline-none flex-shrink-0"
+                          title={expandedConversations.has(email.conversationId) ? 'Conversation\'ı kapat' : 'Conversation\'ı aç'}
+                        >
+                          {expandedConversations.has(email.conversationId) ? '▼' : '▶'}
+                        </button>
                       )}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {email.subject || 'Konu yok'}
+                          {email.conversationCount > 1 && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
+                              {email.conversationCount}
+                            </span>
+                          )}
+                        </div>
+                        {email.hasAttachments && (
+                          <div className="flex items-center mt-1">
+                            <FaPaperclip className="h-3 w-3 text-gray-400 mr-1" />
+                            <span className="text-xs text-gray-500">Ek dosya</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                   
@@ -314,6 +375,92 @@ const EmailTable = ({
                     </div>
                   </td>
                 </tr>
+                
+                {/* Conversation emails */}
+                {email.conversationId && 
+                 expandedConversations.has(email.conversationId) && 
+                 conversationEmails[email.conversationId] && 
+                 conversationEmails[email.conversationId]
+                   .filter(convEmail => convEmail.id !== email.id)
+                   .map((convEmail) => (
+                  <tr 
+                    key={`conv-${convEmail.id}`}
+                    className="bg-gray-50 border-l-4 border-blue-300"
+                  >
+                    <td className="px-8 py-3 text-gray-500">
+                      <div className="text-sm">
+                        {moment(convEmail.dateReceived).format('DD.MM.YYYY')}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {moment(convEmail.dateReceived).format('HH:mm')}
+                      </div>
+                    </td>
+                    
+                    <td className="px-8 py-3">
+                      <div className="text-sm text-gray-700">
+                        {convEmail.senderName || 'Bilinmiyor'}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {convEmail.senderEmail}
+                      </div>
+                    </td>
+                    
+                    <td className="px-8 py-3">
+                      <div className="text-sm text-gray-700">
+                        {convEmail.companyName || '-'}
+                      </div>
+                    </td>
+                    
+                    <td className="px-8 py-3 max-w-xs">
+                      <div className="text-sm text-gray-700 truncate">
+                        {convEmail.subject || 'Konu yok'}
+                      </div>
+                      {convEmail.hasAttachments && (
+                        <div className="flex items-center mt-1">
+                          <FaPaperclip className="h-3 w-3 text-gray-400 mr-1" />
+                          <span className="text-xs text-gray-500">Ek dosya</span>
+                        </div>
+                      )}
+                    </td>
+                    
+                    <td className="px-8 py-3">
+                      {getStatusBadge(convEmail.status)}
+                    </td>
+                    
+                    <td className="px-8 py-3 text-xs">
+                      <span className="text-gray-500">
+                        {moment(convEmail.dateReceived).fromNow()}
+                      </span>
+                    </td>
+                    
+                    <td className="px-8 py-3">
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => onEmailClick(convEmail)}
+                          className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
+                          title="Görüntüle"
+                        >
+                          <FaEye className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => onReply(convEmail)}
+                          className="p-1 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-md transition-colors"
+                          title="Yanıtla"
+                        >
+                          <FaReply className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => onForward(convEmail)}
+                          className="p-1 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-md transition-colors"
+                          title="İlet"
+                        >
+                          <FaShare className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

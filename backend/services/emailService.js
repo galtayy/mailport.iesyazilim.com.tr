@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { Email, EmailAttachment } = require('../models');
 const { extractCompanyName, extractSenderName } = require('../utils/emailParser');
+const conversationService = require('./conversationService');
 
 class EmailService {
   constructor() {
@@ -140,6 +141,12 @@ class EmailService {
     // Eğer önceki mailden firma ismi varsa onu kullan, yoksa otomatik çıkar
     const companyName = previousEmail?.companyName || extractCompanyName(senderEmail, senderName);
 
+    // Conversation detection
+    const conversationInfo = await conversationService.detectConversation({
+      senderEmail,
+      subject: parsed.subject || ''
+    });
+
     const emailData = {
       messageId,
       dateReceived: parsed.date || new Date(),
@@ -150,7 +157,8 @@ class EmailService {
       content: parsed.text || '',
       htmlContent: parsed.html || '',
       hasAttachments: (parsed.attachments && parsed.attachments.length > 0),
-      status: 'unread'
+      status: 'unread',
+      ...conversationInfo
     };
 
     const email = await Email.create(emailData);

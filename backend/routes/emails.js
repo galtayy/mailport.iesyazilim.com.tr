@@ -11,6 +11,9 @@ router.use(authenticateToken);
 
 router.get('/', emailController.getAllEmails);
 router.get('/stats', emailController.getStats);
+router.get('/conversations/stats', emailController.getConversationStats);
+router.post('/conversations/organize', emailController.organizeConversations);
+router.get('/conversations/:conversationId', emailController.getConversationEmails);
 router.get('/:id', emailController.getEmailById);
 router.get('/:id/history', emailController.getEmailHistory);
 router.put('/:id', emailController.updateEmail);

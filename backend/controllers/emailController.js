@@ -1,6 +1,7 @@
 const { Email, EmailAttachment, ActionLog, User } = require('../models');
 const nodemailer = require('nodemailer');
 const { Op } = require('sequelize');
+const conversationService = require('../services/conversationService');
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -15,21 +16,41 @@ const transporter = nodemailer.createTransport({
 const emailController = {
   async getAllEmails(req, res) {
     try {
-      const { page = 1, limit = 20, search, status, sortBy = 'dateReceived', sortOrder = 'DESC' } = req.query;
+      const { 
+        page = 1, 
+        limit = 20, 
+        search, 
+        status, 
+        sortBy = 'dateReceived', 
+        sortOrder = 'DESC',
+        conversationMode = 'true' 
+      } = req.query;
       
       const where = {};
       
-      if (search) {
+      // Conversation mode: sadece root email'leri veya conversation'ı olmayan email'leri getir
+      if (conversationMode === 'true') {
         where[Op.or] = [
-          { senderEmail: { [Op.like]: `%${search}%` } },
-          { senderName: { [Op.like]: `%${search}%` } },
-          { companyName: { [Op.like]: `%${search}%` } },
-          { subject: { [Op.like]: `%${search}%` } }
+          { isConversationRoot: true },
+          { conversationId: null }
         ];
       }
       
+      if (search) {
+        where[Op.and] = where[Op.and] || [];
+        where[Op.and].push({
+          [Op.or]: [
+            { senderEmail: { [Op.like]: `%${search}%` } },
+            { senderName: { [Op.like]: `%${search}%` } },
+            { companyName: { [Op.like]: `%${search}%` } },
+            { subject: { [Op.like]: `%${search}%` } }
+          ]
+        });
+      }
+      
       if (status) {
-        where.status = status;
+        where[Op.and] = where[Op.and] || [];
+        where[Op.and].push({ status });
       }
 
       const offset = (page - 1) * limit;
@@ -60,8 +81,32 @@ const emailController = {
         offset: parseInt(offset)
       });
 
+      // Her conversation root email için conversation email sayısını hesapla
+      const enrichedEmails = await Promise.all(rows.map(async (email) => {
+        const emailData = email.toJSON();
+        
+        if (email.conversationId) {
+          const conversationCount = await Email.count({
+            where: { conversationId: email.conversationId }
+          });
+          emailData.conversationCount = conversationCount;
+          
+          // Conversation'daki en son email tarihini al
+          const latestEmail = await Email.findOne({
+            where: { conversationId: email.conversationId },
+            order: [['dateReceived', 'DESC']]
+          });
+          emailData.latestEmailDate = latestEmail?.dateReceived || email.dateReceived;
+        } else {
+          emailData.conversationCount = 1;
+          emailData.latestEmailDate = email.dateReceived;
+        }
+        
+        return emailData;
+      }));
+
       res.json({
-        emails: rows,
+        emails: enrichedEmails,
         totalCount: count,
         totalPages: Math.ceil(count / limit),
         currentPage: parseInt(page)
@@ -463,6 +508,47 @@ ${email.content}
     } catch (error) {
       console.error('Dosya görüntüleme hatası:', error);
       res.status(500).json({ error: 'Dosya görüntülenirken hata oluştu' });
+    }
+  },
+
+  getConversationEmails: async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      
+      const emails = await conversationService.getConversationEmails(conversationId);
+      
+      res.json({
+        emails,
+        count: emails.length
+      });
+    } catch (error) {
+      console.error('Conversation email\'leri alma hatası:', error);
+      res.status(500).json({ error: 'Conversation email\'leri alınırken hata oluştu' });
+    }
+  },
+
+  organizeConversations: async (req, res) => {
+    try {
+      const result = await conversationService.organizeExistingEmails();
+      
+      res.json({
+        message: 'Email\'ler başarıyla organize edildi',
+        ...result
+      });
+    } catch (error) {
+      console.error('Email organize hatası:', error);
+      res.status(500).json({ error: 'Email\'ler organize edilirken hata oluştu' });
+    }
+  },
+
+  getConversationStats: async (req, res) => {
+    try {
+      const stats = await conversationService.getConversationStats();
+      
+      res.json(stats);
+    } catch (error) {
+      console.error('Conversation istatistik hatası:', error);
+      res.status(500).json({ error: 'Conversation istatistikleri alınırken hata oluştu' });
     }
   },
 

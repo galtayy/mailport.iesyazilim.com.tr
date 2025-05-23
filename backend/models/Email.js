@@ -79,6 +79,21 @@ const Email = sequelize.define('Email', {
     type: DataTypes.DATE,
     allowNull: true,
     field: 'last_action_at'
+  },
+  conversationId: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'conversation_id'
+  },
+  threadSubject: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    field: 'thread_subject'
+  },
+  isConversationRoot: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    field: 'is_conversation_root'
   }
 }, {
   tableName: 'emails',
@@ -86,7 +101,9 @@ const Email = sequelize.define('Email', {
     { fields: ['date_received'] },
     { fields: ['sender_email'] },
     { fields: ['company_name'] },
-    { fields: ['status'] }
+    { fields: ['status'] },
+    { fields: ['conversation_id'] },
+    { fields: ['is_conversation_root'] }
   ]
 });
 
