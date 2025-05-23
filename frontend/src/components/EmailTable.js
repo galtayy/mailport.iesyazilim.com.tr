@@ -2,6 +2,7 @@ import React, { useState, Fragment } from 'react';
 import { FaReply, FaShare, FaPaperclip, FaEdit, FaEye, FaFilter, FaSearch, FaEnvelope, FaTimes } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/tr';
+import api from '../services/api';
 
 moment.locale('tr');
 

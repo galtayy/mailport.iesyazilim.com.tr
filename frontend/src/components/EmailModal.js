@@ -9,6 +9,19 @@ const ImagePreview = ({ attachmentId, filename }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   
+  const handleImageClick = async () => {
+    try {
+      const response = await api.get(`/emails/attachments/${attachmentId}/download`, {
+        responseType: 'blob'
+      });
+      const url = URL.createObjectURL(response.data);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('Download error:', error);
+    }
+  };
+  
   useEffect(() => {
     const loadImage = async () => {
       try {
@@ -33,7 +46,7 @@ const ImagePreview = ({ attachmentId, filename }) => {
         URL.revokeObjectURL(imageSrc);
       }
     };
-  }, [attachmentId, API_BASE_URL]);
+  }, [attachmentId]);
 
   if (loading) {
     return (
@@ -52,7 +65,7 @@ const ImagePreview = ({ attachmentId, filename }) => {
       src={imageSrc}
       alt={filename}
       className="h-16 w-16 object-cover rounded border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-      onClick={() => window.open(`${API_BASE_URL}/api/emails/attachments/${attachmentId}/view`, '_blank')}
+      onClick={handleImageClick}
       title="Resmi büyütmek için tıklayın"
     />
   );
